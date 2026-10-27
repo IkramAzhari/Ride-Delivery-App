@@ -9,7 +9,7 @@ const RideSchema = new mongoose.Schema(
     dropoff: String,
     status: {
       type: String,
-      enum: ['requested', 'accepted', 'completed'],
+      enum: ['requested', 'accepted', 'completed','cancelled'],
       default: 'requested',
     },
   },

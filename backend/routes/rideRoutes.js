@@ -6,6 +6,7 @@ const {
   listPendingRides,
   acceptRide,
   completeRide,
+  cancelRide
 } = require('../controllers/rideController');
 const auth = require('../middlewares/authMiddleware');
 
@@ -15,7 +16,7 @@ router.get('/pending', auth, listPendingRides);
 
 router.post('/:id/accept', auth, acceptRide);
 router.post('/:id/complete', auth, completeRide);
-
+router.post('/:id/cancel', auth, cancelRide);
 module.exports = router;
 
 

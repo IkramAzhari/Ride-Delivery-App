@@ -3,6 +3,32 @@ import { useEffect, useState } from 'react';
 export default function RideHistory({ token }) {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const cancelRide = async (rideId) => {
+    try {
+  const res = await fetch(`http://localhost:5000/api/rides/${rideId}/cancel`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      },
+    });
+    const data = await res.json();
+
+if (!res.ok) {
+  alert(data.error || 'Failed to cancel ride');
+  return;
+}
+
+setRides((currentRides) =>
+  currentRides.map((ride) =>
+    ride._id === rideId ? data : ride
+  )
+);
+}catch (err) {
+  console.error('Cancel ride error:', err);
+  alert('Could not cancel ride. Please try again.');
+}
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -30,6 +56,8 @@ export default function RideHistory({ token }) {
     fetchRides();
   }, [token]);
 
+  
+  
   if (loading) return <p>Loading rides...</p>;
 
   return (
@@ -41,6 +69,11 @@ export default function RideHistory({ token }) {
           <p><b>Pickup:</b> {ride.pickup}</p>
           <p><b>Dropoff:</b> {ride.dropoff}</p>
           <p><b>Status:</b> {ride.status}</p>
+          {ride.status === 'requested' && (
+            <button onClick={() => cancelRide(ride._id)}>
+              Cancel Ride
+            </button>
+          )}
         </div>
       ))}
     </div>

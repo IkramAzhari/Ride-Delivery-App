@@ -91,10 +91,39 @@ async function completeRide(req, res) {
   }
 }
 
+async function cancelRide(req, res) {
+  try {
+    const ride = await Ride.findById(req.params.id);
+
+    if (!ride) {
+      return res.status(404).json({ error: 'Ride not found' });
+    }
+
+    if (String(ride.rider) !== req.user.userId) {
+      return res.status(403).json({ error: 'Not your ride' });
+    }
+
+    if (ride.status !== 'requested') {
+      return res.status(400).json({
+        error: 'Only requested rides can be cancelled',
+      });
+    }
+
+    ride.status = 'cancelled';
+    await ride.save();
+
+    return res.json(ride);
+  } catch (err) {
+    console.error('Cancel ride error:', err);
+    return res.status(500).json({ error: 'Failed to cancel ride' });
+  }
+}
+
 module.exports = {
   createRide,
   listRides,
   listPendingRides,
   acceptRide,
   completeRide,
+  cancelRide,
 };
