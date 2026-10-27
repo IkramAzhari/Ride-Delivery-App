@@ -25,6 +25,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', rideRoutes);
 
+app.use('/api/lost-items', require('./routes/lostItemRoutes'));
+
 // Global error handler (must be last)
 app.use(errorHandler);
 

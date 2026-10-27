@@ -69,6 +69,49 @@ setRides((currentRides) =>
           <p><b>Pickup:</b> {ride.pickup}</p>
           <p><b>Dropoff:</b> {ride.dropoff}</p>
           <p><b>Status:</b> {ride.status}</p>
+            
+{ride.status === 'completed' && (
+  <button
+    onClick={async () => {
+      const description = window.prompt(
+        'Describe the lost item:'
+      );
+
+      if (!description || !description.trim()) return;
+
+      try {
+        const response = await fetch(
+          'http://localhost:5000/api/lost-items',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              rideId: ride._id,
+              description: description.trim(),
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          alert(data.message || 'Failed to report lost item');
+          return;
+        }
+
+        alert('Lost item reported successfully!');
+      } catch (error) {
+        alert('Could not connect to the server');
+      }
+    }}
+  >
+    Report Lost Item
+  </button>
+)}
+
           {ride.status === 'requested' && (
             <button onClick={() => cancelRide(ride._id)}>
               Cancel Ride

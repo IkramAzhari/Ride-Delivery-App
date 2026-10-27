@@ -72,6 +72,33 @@ async function acceptRide(req, res) {
 }
 
 async function completeRide(req, res) {
+  try {
+    const ride = await Ride.findById(req.params.id);
+
+    if (!ride) {
+      return res.status(404).json({ error: 'Ride not found' });
+    }
+
+    if (ride.status !== 'accepted') {
+      return res.status(400).json({
+        error: 'Ride is not accepted',
+      });
+    }
+
+    ride.status = 'completed';
+    await ride.save();
+
+    return res.json(ride);
+  } catch (err) {
+    console.error('Complete ride error:', err);
+    return res.status(500).json({
+      error: 'Failed to complete ride',
+    });
+  }
+}
+
+
+async function completeRide(req, res) {
   const rideId = req.params.id;
   try {
     const ride = await Ride.findById(rideId);
