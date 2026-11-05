@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const lostItemSchema = new mongoose.Schema(
@@ -19,8 +20,17 @@ const lostItemSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['reported', 'under_review', 'resolved'],
+      enum: ['reported', 'under_review', 'found', 'not_found', 'resolved'],
       default: 'reported',
+    },
+    driverReply: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    driverRespondedAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }
