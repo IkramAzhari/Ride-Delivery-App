@@ -1,28 +1,30 @@
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import RideForm from '../components/RideForm';
 import styles from '../components/HomeHero.module.css';
 import Footer from '../components/Footer';
 
-// Map (Leaflet) – SSR off
 const MapComponent = dynamic(() => import('../components/MapComponent'), {
   ssr: false,
 });
 
 export default function Home() {
   const { user, logout, token } = useAuth();
+  const { language, toggleLanguage, t } = useLanguage();
+
   const [pickup, setPickup] = useState(null);
   const [dropoff, setDropoff] = useState(null);
 
   const handleRequestRide = async ({ pickup, dropoff }) => {
-    // demo markers
     setPickup([17.385, 78.4867]);
     setDropoff([17.435, 78.4444]);
 
     if (!token) {
-      alert('Please log in as a rider to request a ride.');
+      alert(t('riderLoginMessage'));
       return;
     }
 
@@ -37,16 +39,17 @@ export default function Home() {
       });
 
       const data = await res.json();
+
       if (res.ok) {
-        alert('Ride requested successfully!');
+        alert(language === 'ar' ? 'تم طلب الرحلة بنجاح!' : 'Ride requested successfully!');
         console.log('Ride created:', data);
       } else {
         console.error('Ride error:', data);
-        alert(data.error || 'Ride request failed');
+        alert(data.error || (language === 'ar' ? 'فشل طلب الرحلة' : 'Ride request failed'));
       }
     } catch (err) {
       console.error('Ride request error:', err);
-      alert('Server error while creating ride');
+      alert(t('serverError'));
     }
   };
 
@@ -54,136 +57,156 @@ export default function Home() {
     <>
       <div className={styles.page}>
         <div className={styles.inner}>
-          {/* Top bar */}
           <header className={styles.topBar}>
             <div className={styles.logo}>
               Uber<span>Clone</span>
             </div>
+
             <nav className={styles.navLinks}>
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                className={styles.navLink}
+                style={{
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  padding: '8px 14px',
+                  cursor: 'pointer',
+                  background: '#fff',
+                  color: '#092032',
+                  fontWeight: 'bold',
+                }}
+              >
+                {language === 'en' ? 'العربية' : 'English'}
+              </button>
+
               {user ? (
                 <>
                   <span className={styles.navLink}>
-                    {user.name ? `Hi, ${user.name}` : user.email}
+                    {user.name
+                      ? `${t('greeting')}, ${user.name}`
+                      : user.email}
                   </span>
+
                   <Link href="/dashboard" className={styles.navLink}>
-                    Dashboard
+                    {t('dashboard')}
                   </Link>
+
                   <button
                     type="button"
                     className={styles.navLink}
                     onClick={logout}
-                    style={{ border: 'none', background: 'transparent', padding: 0 }}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      padding: 0,
+                      cursor: 'pointer',
+                    }}
                   >
-                    Logout
+                    {t('logout')}
                   </button>
                 </>
               ) : (
                 <>
                   <Link href="/register" className={styles.navLink}>
-                    Register
+                    {t('register')}
                   </Link>
+
                   <Link href="/login" className={styles.navLink}>
-                    Login
+                    {t('login')}
                   </Link>
+
                   <Link href="/dashboard" className={styles.navLink}>
-                    Dashboard
+                    {t('dashboard')}
                   </Link>
                 </>
               )}
             </nav>
           </header>
 
-          {/* Badge */}
-          <div className={styles.badge}>🚗 Demo Uber-style booking</div>
+          <div className={styles.badge}>
+            {t('demoBadge')}
+          </div>
 
-          {/* Hero grid: form + map */}
           <div className={styles.heroGrid}>
-            {/* Left: text + form */}
             <section className={styles.heroText}>
               <h1 className={styles.heroTitle}>
-                Book your next ride with{' '}
+                {t('bookRide')}{' '}
                 <span className={styles.heroHighlight}>Uber</span>
               </h1>
+
               <p className={styles.heroSubtitle}>
-                Enter your pickup and drop locations, preview your route on the map,
-                then manage everything from your dashboard.
+                {t('homeDescription')}
               </p>
 
               <div className={styles.formCard}>
                 {user && user.role === 'driver' ? (
                   <p className={styles.helperText}>
-                    You are logged in as a driver. Go to your dashboard to see assigned
-                    rides.
+                    {t('driverHomeMessage')}
                   </p>
                 ) : user ? (
                   <RideForm onRequestRide={handleRequestRide} />
                 ) : (
                   <p className={styles.helperText}>
-                    Please log in as a rider to request a ride.
+                    {t('riderLoginMessage')}
                   </p>
                 )}
               </div>
             </section>
 
-            {/* Right: map */}
             <section className={styles.mapCard}>
               <div className={styles.mapHeader}>
-                <div className={styles.mapTitle}>Live route preview</div>
+                <div className={styles.mapTitle}>
+                  {t('liveRoute')}
+                </div>
+
                 <div className={styles.mapHint}>
-                  After you request a ride, your pickup and drop markers will appear
-                  here.
+                  {t('mapHint')}
                 </div>
               </div>
+
               <div className={styles.mapBody}>
                 <MapComponent pickup={pickup} dropoff={dropoff} />
               </div>
             </section>
           </div>
 
-          {/* Info cards row */}
           <section className={styles.infoSection}>
             <div className={styles.infoGrid}>
               <div className={styles.infoCard}>
-                <h2>Why ride with Uber?</h2>
-                <p>
-                  Upfront routes, simple booking flow, and a clean dashboard to track
-                  your trips.
-                </p>
+                <h2>{t('whyUber')}</h2>
+                <p>{t('whyUberDescription')}</p>
               </div>
+
               <div className={styles.infoCard}>
-                <h3>Safe and reliable</h3>
-                <p>
-                  Drivers verify their profile and see only rides that match their
-                  status.
-                </p>
+                <h3>{t('safeReliable')}</h3>
+                <p>{t('safeDescription')}</p>
               </div>
+
               <div className={styles.infoCard}>
-                <h3>For riders and drivers</h3>
-                <p>
-                  Riders request trips in seconds, drivers see incoming requests on
-                  their dashboard.
-                </p>
+                <h3>{t('ridersDrivers')}</h3>
+                <p>{t('ridersDriversDescription')}</p>
               </div>
             </div>
           </section>
 
-          {/* Two-column info */}
           <section className={styles.infoSectionAlt}>
             <div className={styles.infoSplit}>
               <div>
-                <h2>Built like a real app</h2>
+                <h2>{t('realApp')}</h2>
                 <ul>
-                  <li>JWT auth with rider / driver roles</li>
-                  <li>Live map preview with pickup and drop markers</li>
-                  <li>Driver dashboard with incoming ride requests</li>
+                  <li>{t('jwtAuth')}</li>
+                  <li>{t('liveMap')}</li>
+                  <li>{t('driverRequests')}</li>
                 </ul>
               </div>
+
               <div>
-                <h2>Coming next</h2>
+                <h2>{t('comingNext')}</h2>
                 <ul>
-                  <li>Stripe payments and fare history</li>
-                  <li>Better driver assignment logic</li>
-                  <li>Push-style real-time updates</li>
+                  <li>{t('stripePayments')}</li>
+                  <li>{t('driverAssignment')}</li>
+                  <li>{t('realtimeUpdates')}</li>
                 </ul>
               </div>
             </div>
@@ -191,7 +214,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer below hero */}
       <Footer />
     </>
   );

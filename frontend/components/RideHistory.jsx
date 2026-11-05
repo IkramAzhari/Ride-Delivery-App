@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function RideHistory({ token }) {
+  const { t } = useLanguage();
+
   const [rides, setRides] = useState([]);
   const [lostItems, setLostItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +34,7 @@ export default function RideHistory({ token }) {
       );
     } catch (err) {
       console.error('Cancel ride error:', err);
-      alert('Could not cancel ride. Please try again.');
+      alert(t('serverError'));
     }
   };
 
@@ -59,7 +62,9 @@ export default function RideHistory({ token }) {
   };
 
   const reportLostItem = async (rideId) => {
-    const description = window.prompt('Describe the lost item:');
+    const description = window.prompt(
+      t('describeLostItem')
+    );
 
     if (!description || !description.trim()) return;
 
@@ -82,15 +87,15 @@ export default function RideHistory({ token }) {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message || 'Failed to report lost item');
+        alert(data.message || t('reportFailed'));
         return;
       }
 
       setLostItems((current) => [...current, data.lostItem]);
 
-      alert('Lost item reported successfully!');
+      alert(t('reportedSuccessfully'));
     } catch (error) {
-      alert('Could not connect to the server');
+      alert(t('serverError'));
     }
   };
 
@@ -99,11 +104,14 @@ export default function RideHistory({ token }) {
 
     const fetchRides = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/rides', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await fetch(
+          'http://localhost:5000/api/rides',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         const data = await res.json();
 
@@ -123,13 +131,13 @@ export default function RideHistory({ token }) {
     fetchLostItems();
   }, [token]);
 
-  if (loading) return <p>Loading rides...</p>;
+  if (loading) return <p>{t('loadingRides')}</p>;
 
   return (
-    <div>
-      <h2>My Rides</h2>
+    <div dir="auto">
+      <h2>{t('myRides')}</h2>
 
-      {rides.length === 0 && <p>No rides yet.</p>}
+      {rides.length === 0 && <p>{t('noRides')}</p>}
 
       {rides.map((ride) => {
         const lostItem = lostItems.find((item) => {
@@ -151,13 +159,30 @@ export default function RideHistory({ token }) {
               borderRadius: 6,
             }}
           >
-            <p><b>Pickup:</b> {ride.pickup}</p>
-            <p><b>Dropoff:</b> {ride.dropoff}</p>
-            <p><b>Status:</b> {ride.status}</p>
+            <p>
+              <b>{t('pickup')}:</b> {ride.pickup}
+            </p>
+
+            <p>
+              <b>{t('dropoff')}:</b> {ride.dropoff}
+            </p>
+
+            <p>
+              <b>{t('status')}:</b>{' '}
+              {ride.status === 'completed'
+                ? t('completed')
+                : ride.status === 'requested'
+                ? t('requested')
+                : ride.status === 'accepted'
+                ? t('accepted')
+                : ride.status === 'cancelled'
+                ? t('cancelled')
+                : ride.status}
+            </p>
 
             {ride.status === 'completed' && !lostItem && (
               <button onClick={() => reportLostItem(ride._id)}>
-                Report Lost Item
+                {t('reportLostItem')}
               </button>
             )}
 
@@ -170,39 +195,39 @@ export default function RideHistory({ token }) {
                   borderRadius: 6,
                 }}
               >
-                <h4>Lost Item Report</h4>
+                <h4>{t('lostItemReports')}</h4>
 
                 <p>
-                  <b>Description:</b> {lostItem.description}
+                  <b>{t('description')}:</b> {lostItem.description}
                 </p>
 
                 <p>
-                  <b>Status:</b>{' '}
+                  <b>{t('status')}:</b>{' '}
                   {lostItem.status === 'found'
-                    ? 'Found'
+                    ? t('found')
                     : lostItem.status === 'not_found'
-                    ? 'Not Found'
+                    ? t('notFound')
                     : lostItem.status === 'resolved'
-                    ? 'Resolved'
+                    ? t('resolved')
                     : lostItem.status === 'under_review'
-                    ? 'Under Review'
-                    : 'Reported'}
+                    ? t('underReview')
+                    : t('reported')}
                 </p>
 
                 {lostItem.driverReply ? (
                   <div>
-                    <p><b>Driver Reply:</b></p>
+                    <p><b>{t('driverReply')}:</b></p>
                     <p>{lostItem.driverReply}</p>
                   </div>
                 ) : (
-                  <p>Waiting for driver response...</p>
+                  <p>{t('waitingReply')}</p>
                 )}
               </div>
             )}
 
             {ride.status === 'requested' && (
               <button onClick={() => cancelRide(ride._id)}>
-                Cancel Ride
+                {t('cancelRide')}
               </button>
             )}
           </div>

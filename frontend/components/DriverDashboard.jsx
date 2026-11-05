@@ -1,11 +1,31 @@
+
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function DriverDashboard({ token }) {
+  const { t } = useLanguage();
+
   const [rides, setRides] = useState([]);
   const [lostItems, setLostItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [replies, setReplies] = useState({});
   const [statuses, setStatuses] = useState({});
+
+  const translateStatus = (status) => {
+    const statusKeys = {
+      requested: 'requested',
+      accepted: 'accepted',
+      completed: 'completed',
+      cancelled: 'cancelled',
+      reported: 'reported',
+      under_review: 'underReview',
+      found: 'found',
+      not_found: 'notFound',
+      resolved: 'resolved',
+    };
+
+    return statusKeys[status] ? t(statusKeys[status]) : status;
+  };
 
   const fetchPendingRides = async () => {
     if (!token) return;
@@ -79,7 +99,7 @@ export default function DriverDashboard({ token }) {
         alert(data.error || 'Failed to accept ride');
       }
     } catch (err) {
-      alert('Server error while accepting ride');
+      alert(t('serverError'));
     }
   };
 
@@ -105,7 +125,7 @@ export default function DriverDashboard({ token }) {
         alert(data.error || 'Failed to complete ride');
       }
     } catch (err) {
-      alert('Server error while completing ride');
+      alert(t('serverError'));
     }
   };
 
@@ -114,7 +134,7 @@ export default function DriverDashboard({ token }) {
     const status = statuses[itemId] || 'not_found';
 
     if (!reply) {
-      alert('Please write a reply first');
+      alert(t('replyRequired'));
       return;
     }
 
@@ -134,14 +154,14 @@ export default function DriverDashboard({ token }) {
       const data = await res.json();
 
       if (res.ok) {
-        alert('Reply sent successfully');
+        alert(t('replySent'));
         setReplies((prev) => ({ ...prev, [itemId]: '' }));
         fetchDriverLostItems();
       } else {
         alert(data.message || 'Failed to send reply');
       }
     } catch (err) {
-      alert('Server error while sending reply');
+      alert(t('serverError'));
     }
   };
 
@@ -157,13 +177,13 @@ export default function DriverDashboard({ token }) {
     return () => clearInterval(interval);
   }, [token]);
 
-  if (loading) return <p>Loading ride requests...</p>;
+  if (loading) return <p>{t('loadingRides')}</p>;
 
   return (
-    <div>
-      <h2>Driver Dashboard</h2>
+    <div dir="auto">
+      <h2>{t('driverDashboard')}</h2>
 
-      {rides.length === 0 && <p>No rides available.</p>}
+      {rides.length === 0 && <p>{t('noRidesAvailable')}</p>}
 
       <ul>
         {rides.map((ride) => (
@@ -176,22 +196,24 @@ export default function DriverDashboard({ token }) {
               borderRadius: 6,
             }}
           >
-            <strong>Pickup:</strong> {ride.pickup}
+            <strong>{t('pickup')}:</strong> {ride.pickup}
             <br />
-            <strong>Dropoff:</strong> {ride.dropoff}
+
+            <strong>{t('dropoff')}:</strong> {ride.dropoff}
             <br />
-            <strong>Status:</strong> {ride.status}
+
+            <strong>{t('status')}:</strong> {translateStatus(ride.status)}
             <br />
 
             {ride.status === 'requested' && (
               <button onClick={() => handleAccept(ride._id)}>
-                Accept Ride
+                {t('acceptRide')}
               </button>
             )}
 
             {ride.status === 'accepted' && (
               <button onClick={() => handleComplete(ride._id)}>
-                Mark Completed
+                {t('markCompleted')}
               </button>
             )}
           </li>
@@ -200,11 +222,9 @@ export default function DriverDashboard({ token }) {
 
       <hr />
 
-      <h2>Lost Item Reports</h2>
+      <h2>{t('lostItemReports')}</h2>
 
-      {lostItems.length === 0 && (
-        <p>No lost item reports for your completed rides.</p>
-      )}
+      {lostItems.length === 0 && <p>{t('noLostItems')}</p>}
 
       {lostItems.map((item) => (
         <div
@@ -217,30 +237,35 @@ export default function DriverDashboard({ token }) {
           }}
         >
           <p>
-            <strong>Lost Item:</strong> {item.description}
+            <strong>{t('lostItem')}:</strong> {item.description}
           </p>
 
           <p>
-            <strong>Ride:</strong>{' '}
-            {item.ride?.pickup} → {item.ride?.dropoff}
+            <strong>{t('pickup')}:</strong> {item.ride?.pickup}
           </p>
 
           <p>
-            <strong>Rider:</strong> {item.rider?.name || 'Unknown'}
+            <strong>{t('dropoff')}:</strong> {item.ride?.dropoff}
           </p>
 
           <p>
-            <strong>Status:</strong> {item.status}
+            <strong>{t('rider')}:</strong>{' '}
+            {item.rider?.name || (t('unknown'))}
+          </p>
+
+          <p>
+            <strong>{t('status')}:</strong>{' '}
+            {translateStatus(item.status)}
           </p>
 
           {item.driverReply ? (
             <p>
-              <strong>Your Reply:</strong> {item.driverReply}
+              <strong>{t('yourReply')}:</strong> {item.driverReply}
             </p>
           ) : (
             <>
               <textarea
-                placeholder="Write your reply..."
+                placeholder={t('writeReply')}
                 value={replies[item._id] || ''}
                 onChange={(e) =>
                   setReplies((prev) => ({
@@ -265,12 +290,12 @@ export default function DriverDashboard({ token }) {
                 }
                 style={{ marginRight: 8 }}
               >
-                <option value="found">Found</option>
-                <option value="not_found">Not Found</option>
+                <option value="found">{t('found')}</option>
+                <option value="not_found">{t('notFound')}</option>
               </select>
 
               <button onClick={() => handleReply(item._id)}>
-                Send Reply
+                {t('sendReply')}
               </button>
             </>
           )}

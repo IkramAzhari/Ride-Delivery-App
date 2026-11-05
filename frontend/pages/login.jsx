@@ -1,12 +1,16 @@
+
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import styles from '../components/AuthForm.module.css';
 
 export default function Login() {
   const { login } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -14,33 +18,39 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
     try {
       const res = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
+
       const data = await res.json();
+
       if (data.token && data.user) {
         login({ token: data.token, user: data.user });
-        router.push('/'); // redirect to home page
+        router.push('/');
       } else {
-        setError(data.error || 'Login failed');
+        setError(data.error || t('loginFailed'));
       }
     } catch {
-      setError('Server error');
+      setError(t('serverError'));
     }
   };
 
   return (
-    <div className={styles.authPage}>
+    <div className={styles.authPage} dir="auto">
       <div className={styles.authCard}>
-        <h1 className={styles.title}>Welcome back</h1>
-        <p className={styles.subtitle}>Log in to continue booking your rides.</p>
+        <h1 className={styles.title}>{t('welcomeBack')}</h1>
+
+        <p className={styles.subtitle}>
+          {t('loginDescription')}
+        </p>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div>
-            <div className={styles.label}>Email</div>
+            <div className={styles.label}>{t('email')}</div>
             <input
               className={styles.input}
               type="email"
@@ -52,7 +62,7 @@ export default function Login() {
           </div>
 
           <div>
-            <div className={styles.label}>Password</div>
+            <div className={styles.label}>{t('password')}</div>
             <input
               className={styles.input}
               type="password"
@@ -63,17 +73,19 @@ export default function Login() {
             />
           </div>
 
-          {error && <div className={styles.error}>{error}</div>}
+          {error && (
+            <div className={styles.error}>{error}</div>
+          )}
 
           <button type="submit" className={styles.button}>
-            Log in
+            {t('logIn')}
           </button>
         </form>
 
         <div className={styles.footerText}>
-          New here?{' '}
+          {t('newHere')}{' '}
           <Link href="/register" className={styles.link}>
-            Create an account
+            {t('createAccount')}
           </Link>
         </div>
       </div>

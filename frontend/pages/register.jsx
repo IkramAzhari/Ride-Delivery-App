@@ -1,10 +1,14 @@
+
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { useLanguage } from '../context/LanguageContext';
 import styles from '../components/AuthForm.module.css';
 
 export default function Register() {
   const router = useRouter();
+  const { t } = useLanguage();
+
   const [name, setName] = useState('');
   const [role, setRole] = useState('rider');
   const [email, setEmail] = useState('');
@@ -14,36 +18,44 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
     try {
       const res = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role })
       });
+
       const data = await res.json();
+
       if (data.success) {
         router.push('/login');
       } else {
-        setError(data.error || 'Registration failed');
+        setError(data.error || t('registrationFailed'));
       }
     } catch {
-      setError('Server error');
+      setError(t('serverError'));
     }
   };
 
   return (
-    <div className={styles.authPage}>
+    <div className={styles.authPage} dir="auto">
       <div className={styles.authCard}>
-        <h1 className={styles.title}>Create account</h1>
-        <p className={styles.subtitle}>Join as a rider or driver in seconds.</p>
+        <h1 className={styles.title}>
+          {t('createAccountTitle')}
+        </h1>
+
+        <p className={styles.subtitle}>
+          {t('registerDescription')}
+        </p>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div>
-            <div className={styles.label}>Full name</div>
+            <div className={styles.label}>{t('fullName')}</div>
             <input
               className={styles.input}
               type="text"
-              placeholder="Your name"
+              placeholder={t('yourName')}
               value={name}
               required
               onChange={e => setName(e.target.value)}
@@ -51,19 +63,19 @@ export default function Register() {
           </div>
 
           <div>
-            <div className={styles.label}>Role</div>
+            <div className={styles.label}>{t('role')}</div>
             <select
               className={styles.input}
               value={role}
               onChange={e => setRole(e.target.value)}
             >
-              <option value="rider">Rider</option>
-              <option value="driver">Driver</option>
+              <option value="rider">{t('rider')}</option>
+              <option value="driver">{t('driver')}</option>
             </select>
           </div>
 
           <div>
-            <div className={styles.label}>Email</div>
+            <div className={styles.label}>{t('email')}</div>
             <input
               className={styles.input}
               type="email"
@@ -75,7 +87,7 @@ export default function Register() {
           </div>
 
           <div>
-            <div className={styles.label}>Password</div>
+            <div className={styles.label}>{t('password')}</div>
             <input
               className={styles.input}
               type="password"
@@ -86,17 +98,19 @@ export default function Register() {
             />
           </div>
 
-          {error && <div className={styles.error}>{error}</div>}
+          {error && (
+            <div className={styles.error}>{error}</div>
+          )}
 
           <button type="submit" className={styles.button}>
-            Sign up
+            {t('signUp')}
           </button>
         </form>
 
         <div className={styles.footerText}>
-          Already have an account?{' '}
+          {t('alreadyHaveAccount')}{' '}
           <Link href="/login" className={styles.link}>
-            Log in
+            {t('logIn')}
           </Link>
         </div>
       </div>
