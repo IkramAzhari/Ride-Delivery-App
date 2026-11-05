@@ -4,26 +4,37 @@ export default function DriverDashboard({ token }) {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchPendingRides = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch('http://localhost:5000/api/rides/pending', {
+ const fetchPendingRides = async () => {
+  if (!token) return;
+
+  try {
+    const [pendingRes, driverRes] = await Promise.all([
+      fetch('http://localhost:5000/api/rides/pending', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setRides(data);
-      } else {
-        console.error('Error fetching rides:', data);
-      }
-    } catch (err) {
-      console.error('Error fetching rides:', err);
-    } finally {
-      setLoading(false);
+      }),
+      fetch('http://localhost:5000/api/rides/driver', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+    ]);
+
+    const pendingData = await pendingRes.json();
+    const driverData = await driverRes.json();
+
+    if (pendingRes.ok && driverRes.ok) {
+      setRides([...pendingData, ...driverData]);
+    } else {
+      console.error('Error fetching rides:', pendingData, driverData);
     }
-  };
+  } catch (err) {
+    console.error('Error fetching rides:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleAccept = async (rideId) => {
     try {

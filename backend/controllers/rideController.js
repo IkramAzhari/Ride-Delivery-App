@@ -50,6 +50,26 @@ async function listPendingRides(req, res) {
   }
 }
 
+async function listDriverRides(req, res) {
+  try {
+    if (req.user.role !== 'driver') {
+      return res.status(403).json({ error: 'Only drivers can see their rides' });
+    }
+
+    const rides = await Ride.find({
+      driver: req.user.userId,
+      status: { $in: ['accepted', 'completed'] },
+    })
+      .populate('rider', 'name email')
+      .sort({ createdAt: -1 });
+
+    return res.json(rides);
+  } catch (err) {
+    console.error('Driver rides error:', err);
+    return res.status(500).json({ error: 'Failed to fetch driver rides' });
+  }
+}
+
 async function acceptRide(req, res) {
   const rideId = req.params.id;
   try {
@@ -71,31 +91,6 @@ async function acceptRide(req, res) {
   }
 }
 
-async function completeRide(req, res) {
-  try {
-    const ride = await Ride.findById(req.params.id);
-
-    if (!ride) {
-      return res.status(404).json({ error: 'Ride not found' });
-    }
-
-    if (ride.status !== 'accepted') {
-      return res.status(400).json({
-        error: 'Ride is not accepted',
-      });
-    }
-
-    ride.status = 'completed';
-    await ride.save();
-
-    return res.json(ride);
-  } catch (err) {
-    console.error('Complete ride error:', err);
-    return res.status(500).json({
-      error: 'Failed to complete ride',
-    });
-  }
-}
 
 
 async function completeRide(req, res) {
@@ -150,6 +145,7 @@ module.exports = {
   createRide,
   listRides,
   listPendingRides,
+  listDriverRides,
   acceptRide,
   completeRide,
   cancelRide,

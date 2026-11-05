@@ -4,6 +4,7 @@ const {
   createRide,
   listRides,
   listPendingRides,
+  listDriverRides,
   acceptRide,
   completeRide,
   cancelRide
@@ -13,7 +14,7 @@ const auth = require('../middlewares/authMiddleware');
 router.post('/', auth, createRide);
 router.get('/', auth, listRides);
 router.get('/pending', auth, listPendingRides);
-
+router.get('/driver', auth, listDriverRides);
 router.post('/:id/accept', auth, acceptRide);
 router.post('/:id/complete', auth, completeRide);
 router.post('/:id/cancel', auth, cancelRide);
