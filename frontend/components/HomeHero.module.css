@@ -36,6 +36,21 @@
   font-size: 0.9rem;
 }
 
+.languageButton {
+  background: transparent;
+  color: #22c55e;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.languageButton:hover {
+  background: transparent;
+  color: #16a34a;
+}
+
 .navLink {
   color: #e5e7eb;
   cursor: pointer;

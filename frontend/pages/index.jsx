@@ -64,19 +64,10 @@ export default function Home() {
 
             <nav className={styles.navLinks}>
               <button
-                type="button"
-                onClick={toggleLanguage}
-                className={styles.navLink}
-                style={{
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '8px 14px',
-                  cursor: 'pointer',
-                  background: '#fff',
-                  color: '#092032',
-                  fontWeight: 'bold',
-                }}
-              >
+  type="button"
+  onClick={toggleLanguage}
+  className={`${styles.navLink} ${styles.languageButton}`}
+>
                 {language === 'en' ? 'العربية' : 'English'}
               </button>
 
