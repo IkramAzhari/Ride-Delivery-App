@@ -1,6 +1,6 @@
 // backend/controllers/rideController.js
 const Ride = require('../models/Ride');
-const { getRoute } = require('../services/mapService');
+const { getRoute, geocode } = require('../services/mapService');
 
 async function createRide(req, res) {
   const { pickup, dropoff } = req.body;
@@ -9,11 +9,11 @@ async function createRide(req, res) {
       return res.status(400).json({ error: 'Pickup and dropoff are required' });
     }
 
-    // حساب المسافة في الباكند (بالمتر). pickup/dropoff بصيغة "lng,lat"
+    // حساب المسافة في الباكند (بالمتر). pickup/dropoff نص عنوان أو "lng,lat"
     let distance = 0;
     try {
-      const start = String(pickup).split(',').map(Number);
-      const end = String(dropoff).split(',').map(Number);
+      const start = await geocode(pickup);
+      const end = await geocode(dropoff);
       const route = await getRoute({ start, end });
       distance = route.features[0].properties.distance || 0;
     } catch (e) {
@@ -147,7 +147,8 @@ async function cancelRide(req, res) {
 
     return res.json(ride);
   } catch (err) {
-    console.error('Cancel ride error:', err);
+    console.
+      error('Cancel ride error:', err);
     return res.status(500).json({ error: 'Failed to cancel ride' });
   }
 }
