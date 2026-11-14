@@ -23,17 +23,42 @@ async function getRoute({ start, end }) {
   }
 }
 
+const MINIMUM_FARE = 10; // الحد الأدنى بالدينار الليبي
+const PRICE_PER_KM = 1.5; // سعر تجريبي لكل كيلومتر
+
 /**
  * Simple fare calculation based on distance.
  * @param {number} distance - in meters
- * @returns {number} fare in INR
+ * @returns {number} fare in LYD
  */
 function calculateFare(distance) {
-  // Example: ₹50 base + ₹15/km
-  return 50 + Math.round((distance / 1000) * 15);
+  // تحويل المسافة من متر إلى كيلومتر
+  const distanceKm = distance / 1000;
+
+  // حساب السعر حسب المسافة
+  const fare = distanceKm * PRICE_PER_KM;
+
+  // منع السعر من النزول عن 10 دنانير
+  return Math.max(
+    MINIMUM_FARE,
+    Math.ceil(fare * 100) / 100
+  );
+}
+
+/**
+ * Check that a customer's offer is not below the distance-based fare.
+ * @param {number} offer - offered price in LYD
+ * @param {number} distance - in meters
+ * @returns {{ valid: boolean, minPrice: number }}
+ */
+function validateOffer(offer, distance) {
+  const minPrice = calculateFare(distance);
+  const valid = typeof offer === 'number' && offer >= minPrice;
+  return { valid, minPrice };
 }
 
 module.exports = {
   getRoute,
-  calculateFare
+  calculateFare,
+  validateOffer
 };
