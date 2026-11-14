@@ -1,4 +1,4 @@
-// backend/controllers/rideController.js
+﻿// backend/controllers/rideController.js
 const Ride = require('../models/Ride');
 const { getRoute, geocode } = require('../services/mapService');
 
@@ -9,7 +9,7 @@ async function createRide(req, res) {
       return res.status(400).json({ error: 'Pickup and dropoff are required' });
     }
 
-    // حساب المسافة في الباكند (بالمتر). pickup/dropoff نص عنوان أو "lng,lat"
+    // Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø³Ø§ÙØ© ÙÙŠ Ø§Ù„Ø¨Ø§ÙƒÙ†Ø¯ (Ø¨Ø§Ù„Ù…ØªØ±). pickup/dropoff Ù†Øµ Ø¹Ù†ÙˆØ§Ù† Ø£Ùˆ "lng,lat"
     let distance = 0;
     try {
       const start = await geocode(pickup);
@@ -142,7 +142,7 @@ async function cancelRide(req, res) {
     if (!ride) {
       return res.status(404).json({ error: 'Ride not found' });
     }
-    rider) !== req.user.userId) {
+    if (String(ride.rider) !== String(req.user.userId)) {
       return res.status(403).json({ error: 'Not your ride' });
     }
 
@@ -173,34 +173,3 @@ module.exports = {
   cancelRide,
 };
 
-    if (String(ride.
-rider) !== req.user.userId) {
-      return res.status(403).json({ error: 'Not your ride' });
-    }
-
-    if (ride.status !== 'requested') {
-      return res.status(400).json({
-        error: 'Only requested rides can be cancelled',
-      });
-    }
-
-    ride.status = 'cancelled';
-    await ride.save();
-
-    return res.json(ride);
-  } catch (err) {
-    console.error('Cancel ride error:', err);
-    return res.status(500).json({ error: 'Failed to cancel ride' });
-  }
-}
-
-module.exports = {
-  createRide,
-  getRide,
-  listRides,
-  listPendingRides,
-  listDriverRides,
-  acceptRide,
-  completeRide,
-  cancelRide,
-};

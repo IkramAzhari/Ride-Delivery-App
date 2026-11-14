@@ -62,22 +62,22 @@ export default function Home() {
             </div>
 
             <nav className={styles.navLinks}>
-              <button
-                type="button"
-                onClick={toggleLanguage}
-                className={styles.navLink}
-                style={{
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '8px 14px',
-                  cursor: 'pointer',
-                  background: '#fff',
-                  color: '#092032',
-                  fontWeight: 'bold',
-                }}
-              >
-                {language === 'en' ? 'العربية' : 'English'}
-              </button>
+            <button
+  type="button"
+  onClick={toggleLanguage}
+  style={{
+    fontSize: '1rem',
+    fontWeight: 400,
+    color: '#22c55e',
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  }}
+>
+  {language === 'en' ? 'العربية' : 'English'}
+</button>
 
               {user ? (
                 <>

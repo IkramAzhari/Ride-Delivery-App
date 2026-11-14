@@ -1,4 +1,4 @@
-// backend/sockets/rideSocket.js
+﻿// backend/sockets/rideSocket.js
 
 const Ride = require('../models/Ride');
 const { validateOffer } = require('../services/mapService');
@@ -57,4 +57,5 @@ function rideSocket(io) {
   });
 }
 
-module.exports = rideSocket;)
+module.exports = rideSocket;
+
