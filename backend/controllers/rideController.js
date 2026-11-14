@@ -1,5 +1,6 @@
 // backend/controllers/rideController.js
 const Ride = require('../models/Ride');
+const { getRoute } = require('../services/mapService');
 
 async function createRide(req, res) {
   const { pickup, dropoff } = req.body;
@@ -8,9 +9,21 @@ async function createRide(req, res) {
       return res.status(400).json({ error: 'Pickup and dropoff are required' });
     }
 
+    // حساب المسافة في الباكند (بالمتر). pickup/dropoff بصيغة "lng,lat"
+    let distance = 0;
+    try {
+      const start = String(pickup).split(',').map(Number);
+      const end = String(dropoff).split(',').map(Number);
+      const route = await getRoute({ start, end });
+      distance = route.features[0].properties.distance || 0;
+    } catch (e) {
+      console.error('Distance calc failed:', e.message);
+    }
+
     const ride = new Ride({
       pickup,
       dropoff,
+      distance,
       rider: req.user.userId,
       status: 'requested',
     });
@@ -90,8 +103,6 @@ async function acceptRide(req, res) {
     return res.status(500).json({ error: 'Failed to accept ride' });
   }
 }
-
-
 
 async function completeRide(req, res) {
   const rideId = req.params.id;
