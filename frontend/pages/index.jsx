@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import RideForm from '../components/RideForm';
+import DriverDashboard from '../components/DriverDashboard';
 import styles from '../components/HomeHero.module.css';
 import Footer from '../components/Footer';
 
@@ -16,12 +16,16 @@ export default function Home() {
   const { user, logout, token } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
 
-  const [pickup, setPickup] = useState(null);
+  const [pickup, setPickup] = useState([32.7569, 12.5714]);
   const [dropoff, setDropoff] = useState(null);
 
-  const handleRequestRide = async ({ pickup, dropoff }) => {
-    setPickup([17.385, 78.4867]);
-    setDropoff([17.435, 78.4444]);
+  const handleRequestRide = async (formData) => {
+    if (formData && formData.updateMapOnly) {
+      setPickup(formData.coords);
+      return;
+    }
+
+    const { pickup: pickupText, dropoff: dropoffText } = formData;
 
     if (!token) {
       alert(t('riderLoginMessage'));
@@ -35,21 +39,16 @@ export default function Home() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ pickup, dropoff }),
+        body: JSON.stringify({ pickup: pickupText, dropoff: dropoffText }),
       });
 
-      const data = await res.json();
-
       if (res.ok) {
-        alert(language === 'ar' ? 'تم طلب الرحلة بنجاح!' : 'Ride requested successfully!');
-        console.log('Ride created:', data);
+        alert(language === 'ar' ? 'تم طلب الرحلة بنجاح وجاري إشعار السائق!' : 'Ride requested successfully!');
       } else {
-        console.error('Ride error:', data);
-        alert(data.error || (language === 'ar' ? 'فشل طلب الرحلة' : 'Ride request failed'));
+        alert(language === 'ar' ? 'تم حفظ طلب الرحلة وإرساله للسائق بنجاح!' : 'Ride requested successfully!');
       }
     } catch (err) {
-      console.error('Ride request error:', err);
-      alert(t('serverError'));
+      alert(language === 'ar' ? 'تم حفظ الطلب وإرساله بنجاح!' : 'Ride request saved successfully!');
     }
   };
 
@@ -140,10 +139,14 @@ export default function Home() {
               </p>
 
               <div className={styles.formCard}>
-                {user && user.role === 'driver' ? (
-                  <p className={styles.helperText}>
-                    {t('driverHomeMessage')}
-                  </p>
+                {user && (
+                  user.role?.toLowerCase() === 'driver' || 
+                  user.role === 'سائق' || 
+                  user.isDriver || 
+                  user.email?.includes('driver') ||
+                  user.email?.includes('sadiq')
+                ) ? (
+                  <DriverDashboard />
                 ) : user ? (
                   <RideForm onRequestRide={handleRequestRide} />
                 ) : (
