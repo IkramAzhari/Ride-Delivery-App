@@ -23,6 +23,25 @@ async function getRoute({ start, end }) {
   }
 }
 
+/**
+ * Convert a text address to [longitude, latitude].
+ * Accepts "lng,lat" directly, otherwise uses Geoapify Geocoding.
+ */
+async function geocode(text) {
+  const parts = String(text).split(',').map(Number);
+  if (parts.length === 2 && parts.every((n) => !Number.isNaN(n))) {
+    return parts;
+  }
+  const url =ing geometry, distance, duration
+ */
+async function getRoute({ start, end }) {
+  // Format: waypoints=lat1,lon1|la
+  const response = await axios.get(url);
+  const feature = response.data.features[0];
+  if (!feature) throw new Error('Address not found');
+  return feature.geometry.coordinates; // [lng, lat]
+}
+
 const MINIMUM_FARE = 10; // الحد الأدنى بالدينار الليبي
 const PRICE_PER_KM = 1.5; // سعر تجريبي لكل كيلومتر
 
@@ -60,5 +79,6 @@ function validateOffer(offer, distance) {
 module.exports = {
   getRoute,
   calculateFare,
-  validateOffer
+  validateOffer,
+  geocode
 };
