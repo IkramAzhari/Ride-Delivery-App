@@ -1,6 +1,5 @@
-﻿// backend/controllers/rideController.js
+// backend/controllers/rideController.js
 const Ride = require('../models/Ride');
-const { getRoute, geocode } = require('../services/mapService');
 
 async function createRide(req, res) {
   const { pickup, dropoff } = req.body;
@@ -9,21 +8,9 @@ async function createRide(req, res) {
       return res.status(400).json({ error: 'Pickup and dropoff are required' });
     }
 
-    // Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø³Ø§ÙØ© ÙÙŠ Ø§Ù„Ø¨Ø§ÙƒÙ†Ø¯ (Ø¨Ø§Ù„Ù…ØªØ±). pickup/dropoff Ù†Øµ Ø¹Ù†ÙˆØ§Ù† Ø£Ùˆ "lng,lat"
-    let distance = 0;
-    try {
-      const start = await geocode(pickup);
-      const end = await geocode(dropoff);
-      const route = await getRoute({ start, end });
-      distance = route.features[0].properties.distance || 0;
-    } catch (e) {
-      console.error('Distance calc failed:', e.message);
-    }
-
     const ride = new Ride({
       pickup,
       dropoff,
-      distance,
       rider: req.user.userId,
       status: 'requested',
     });
@@ -33,17 +20,6 @@ async function createRide(req, res) {
   } catch (err) {
     console.error('Create ride error:', err);
     return res.status(500).json({ error: 'Failed to create ride' });
-  }
-}
-
-async function getRide(req, res) {
-  try {
-    const ride = await Ride.findById(req.params.id).populate('driver', 'name');
-    if (!ride) return res.status(404).json({ error: 'Ride not found' });
-    return res.json(ride);
-  } catch (err) {
-    console.error('Get ride error:', err);
-    return res.status(500).json({ error: 'Failed to fetch ride' });
   }
 }
 
@@ -115,6 +91,8 @@ async function acceptRide(req, res) {
   }
 }
 
+
+
 async function completeRide(req, res) {
   const rideId = req.params.id;
   try {
@@ -142,7 +120,8 @@ async function cancelRide(req, res) {
     if (!ride) {
       return res.status(404).json({ error: 'Ride not found' });
     }
-    if (String(ride.rider) !== String(req.user.userId)) {
+
+    if (String(ride.rider) !== req.user.userId) {
       return res.status(403).json({ error: 'Not your ride' });
     }
 
@@ -164,7 +143,6 @@ async function cancelRide(req, res) {
 
 module.exports = {
   createRide,
-  getRide,
   listRides,
   listPendingRides,
   listDriverRides,
@@ -172,4 +150,3 @@ module.exports = {
   completeRide,
   cancelRide,
 };
-

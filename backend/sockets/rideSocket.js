@@ -1,7 +1,6 @@
-﻿// backend/sockets/rideSocket.js
+// backend/sockets/rideSocket.js
 
 const Ride = require('../models/Ride');
-const { validateOffer } = require('../services/mapService');
 
 function rideSocket(io) {
   io.on('connection', (socket) => {
@@ -30,27 +29,7 @@ function rideSocket(io) {
       // Broadcast driver location to this ride's room
       io.to(rideId).emit('driverLocationUpdate', location);
     });
-// Customer sends a price offer
-    socket.on('sendOffer', async ({ rideId, offer }) => {
-      try {
-        const ride = await Ride.findById(rideId);
-        if (!ride) {
-          return socket.emit('offerError', { message: 'Ride not found' });
-        }
 
-        const { valid, minPrice } = validateOffer(offer, ride.distance);
-        if (!valid) {
-          return socket.emit('offerRejected', {
-            message: 'Offer is below the minimum fare',
-            minPrice
-          });
-        }
-
-        io.to(rideId).emit('offerReceived', { rideId, offer });
-      } catch (err) {
-        socket.emit('error', 'Failed to send offer');
-      }
-    });
     socket.on('disconnect', () => {
       console.log('Socket disconnected:', socket.id);
     });
@@ -58,4 +37,3 @@ function rideSocket(io) {
 }
 
 module.exports = rideSocket;
-
