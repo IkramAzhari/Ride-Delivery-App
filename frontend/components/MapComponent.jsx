@@ -1,38 +1,29 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-// إصلاح أيقونة الدبوس
+// icon override (keep this)
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl:
+    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl:
+    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:
+    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// مكون لتحديث مركز الخريطة تلقائياً عند تغير موقع الانطلاق
-function ChangeView({ center }) {
-  const map = useMap();
-  if (center) {
-    map.setView(center, 14);
-  }
-  return null;
-}
-
 export default function MapComponent({ pickup, dropoff }) {
-  // الإحداثيات الافتراضية إذا لم يتم تحديد موقع بعد
-  const defaultCenter = [32.7569, 12.5714]; 
-  const currentCenter = Array.isArray(pickup) ? pickup : defaultCenter;
-
   return (
-    <MapContainer center={currentCenter} zoom={14} style={{ height: '100%', width: '100%' }}>
-      <ChangeView center={currentCenter} />
-      <TileLayer
-        attribution='&copy; OpenStreetMap'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {Array.isArray(pickup) && <Marker position={pickup} />}
+    <MapContainer
+      center={[17.385, 78.4867]}
+      zoom={13}
+      style={{ height: '100%', width: '100%' }}  // key: fill container
+      scrollWheelZoom={true}
+    >
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      {pickup && <Marker position={pickup} />}
+      {dropoff && <Marker position={dropoff} />}
     </MapContainer>
   );
 }

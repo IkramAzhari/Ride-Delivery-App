@@ -1,153 +1,308 @@
-import React, { useState, useEffect } from 'react';
 
-export default function DriverDashboard() {
-  const [rideRequest, setRideRequest] = useState(null);
-  const [status, setStatus] = useState('pending');
+import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
-  useEffect(() => {
-    const checkRide = () => {
-      const savedRide = localStorage.getItem('currentRideRequest');
-      if (savedRide) {
-        try {
-          const ride = JSON.parse(savedRide);
-          // عرض الطلبات المعلقة أو المقبولة فقط في شاشة السائق
-          if (ride.status !== 'rejected') {
-            setRideRequest(ride);
-            setStatus(ride.status || 'pending');
-          } else {
-            setRideRequest(null);
-            setStatus('pending');
-          }
-        } catch (e) {
-          setRideRequest(null);
-        }
-      } else {
-        setRideRequest(null);
-        setStatus('pending');
-      }
+export default function DriverDashboard({ token }) {
+  const { t } = useLanguage();
+
+  const [rides, setRides] = useState([]);
+  const [lostItems, setLostItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [replies, setReplies] = useState({});
+  const [statuses, setStatuses] = useState({});
+
+  const translateStatus = (status) => {
+    const statusKeys = {
+      requested: 'requested',
+      accepted: 'accepted',
+      completed: 'completed',
+      cancelled: 'cancelled',
+      reported: 'reported',
+      under_review: 'underReview',
+      found: 'found',
+      not_found: 'notFound',
+      resolved: 'resolved',
     };
 
-    checkRide();
-    const interval = setInterval(checkRide, 1000);
+    return statusKeys[status] ? t(statusKeys[status]) : status;
+  };
+
+  const fetchPendingRides = async () => {
+    if (!token) return;
+
+    try {
+      const [pendingRes, driverRes] = await Promise.all([
+        fetch('http://localhost:5000/api/rides/pending', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('http://localhost:5000/api/rides/driver', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const pendingData = await pendingRes.json();
+      const driverData = await driverRes.json();
+
+      if (pendingRes.ok && driverRes.ok) {
+        setRides([...pendingData, ...driverData]);
+      } else {
+        console.error('Error fetching rides:', pendingData, driverData);
+      }
+    } catch (err) {
+      console.error('Error fetching rides:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDriverLostItems = async () => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(
+        'http://localhost:5000/api/lost-items/driver',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setLostItems(data);
+      } else {
+        console.error('Error fetching lost items:', data);
+      }
+    } catch (err) {
+      console.error('Error fetching lost items:', err);
+    }
+  };
+
+  const handleAccept = async (rideId) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/rides/${rideId}/accept`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        fetchPendingRides();
+      } else {
+        alert(data.error || 'Failed to accept ride');
+      }
+    } catch (err) {
+      alert(t('serverError'));
+    }
+  };
+
+  const handleComplete = async (rideId) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/rides/${rideId}/complete`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        fetchPendingRides();
+        fetchDriverLostItems();
+      } else {
+        alert(data.error || 'Failed to complete ride');
+      }
+    } catch (err) {
+      alert(t('serverError'));
+    }
+  };
+
+  const handleReply = async (itemId) => {
+    const reply = replies[itemId]?.trim();
+    const status = statuses[itemId] || 'not_found';
+
+    if (!reply) {
+      alert(t('replyRequired'));
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/lost-items/${itemId}/reply`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ reply, status }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(t('replySent'));
+        setReplies((prev) => ({ ...prev, [itemId]: '' }));
+        fetchDriverLostItems();
+      } else {
+        alert(data.message || 'Failed to send reply');
+      }
+    } catch (err) {
+      alert(t('serverError'));
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingRides();
+    fetchDriverLostItems();
+
+    const interval = setInterval(() => {
+      fetchPendingRides();
+      fetchDriverLostItems();
+    }, 5000);
+
     return () => clearInterval(interval);
-  }, []);
+  }, [token]);
 
-  const handleAccept = () => {
-    setStatus('accepted');
-    if (rideRequest) {
-      const updated = { ...rideRequest, status: 'accepted' };
-      localStorage.setItem('currentRideRequest', JSON.stringify(updated));
-    }
-  };
-
-  const handleReject = () => {
-    setStatus('rejected');
-    if (rideRequest) {
-      // تحديث الحالة إلى مرفوض ليصل الإشعار للراكب قبل الإغلاق
-      const updated = { ...rideRequest, status: 'rejected' };
-      localStorage.setItem('currentRideRequest', JSON.stringify(updated));
-    }
-    setRideRequest(null);
-  };
+  if (loading) return <p>{t('loadingRides')}</p>;
 
   return (
-    <div style={{
-      background: '#ffffff',
-      padding: '24px',
-      borderRadius: '12px',
-      boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-      direction: 'rtl',
-      textAlign: 'right',
-      marginTop: '20px',
-      border: '1px solid #e0e0e0'
-    }}>
-      <h2 style={{
-        color: '#092032',
-        marginBottom: '20px',
-        borderBottom: '2px solid #0070f3',
-        paddingBottom: '10px',
-        fontSize: '20px',
-        fontWeight: 'bold'
-      }}>
-        🚕 الطلبات الواردة من الركاب
-      </h2>
+    <div dir="auto">
+      <h2>{t('driverDashboard')}</h2>
 
-      {!rideRequest ? (
-        <p style={{ color: '#444', fontSize: '16px', padding: '20px 0', fontWeight: '500' }}>
-          لا توجد طلبات رحلات حالياً. في انتظار طلب جديد من راكب...
-        </p>
-      ) : (
-        <div style={{
-          border: '2px solid #0070f3',
-          borderRadius: '10px',
-          padding: '20px',
-          backgroundColor: '#f0f4f8'
-        }}>
-          <div style={{ marginBottom: '12px', fontSize: '17px', color: '#111', fontWeight: 'bold' }}>
-            <strong>👤 اسم الراكب:</strong>{' '}
-            <span style={{ color: '#0070f3' }}>{rideRequest.passengerName}</span>
-          </div>
+      {rides.length === 0 && <p>{t('noRidesAvailable')}</p>}
 
-          <div style={{ marginBottom: '12px', fontSize: '17px', color: '#111', fontWeight: 'bold' }}>
-            <strong>📍 موقع الانطلاق:</strong>{' '}
-            <span style={{ color: '#333' }}>{rideRequest.pickup}</span>
-          </div>
+      <ul>
+        {rides.map((ride) => (
+          <li
+            key={ride._id}
+            style={{
+              border: '1px solid #ddd',
+              margin: 8,
+              padding: 8,
+              borderRadius: 6,
+            }}
+          >
+            <strong>{t('pickup')}:</strong> {ride.pickup}
+            <br />
 
-          <div style={{ marginBottom: '20px', fontSize: '17px', color: '#111', fontWeight: 'bold' }}>
-            <strong>🏁 الوجهة المطلوبة:</strong>{' '}
-            <span style={{ color: '#333' }}>{rideRequest.dropoff}</span>
-          </div>
+            <strong>{t('dropoff')}:</strong> {ride.dropoff}
+            <br />
 
-          {status === 'accepted' ? (
-            <div style={{
-              background: '#d4edda',
-              color: '#155724',
-              padding: '12px',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              textAlign: 'center',
-              fontSize: '16px'
-            }}>
-              ✅ تم قبول الرحلة! تم إرسال تأكيد للراكب ({rideRequest.passengerName}).
-            </div>
+            <strong>{t('status')}:</strong> {translateStatus(ride.status)}
+            <br />
+
+           <strong>وقت الحجز:</strong> {new Date(ride.createdAt).toLocaleString('ar-LY')}
+            
+            {ride.status === 'requested' && (
+              <button onClick={() => handleAccept(ride._id)}>
+                {t('acceptRide')}
+              </button>
+            )}
+
+            {ride.status === 'accepted' && (
+              <button onClick={() => handleComplete(ride._id)}>
+                {t('markCompleted')}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <hr />
+
+      <h2>{t('lostItemReports')}</h2>
+
+      {lostItems.length === 0 && <p>{t('noLostItems')}</p>}
+
+      {lostItems.map((item) => (
+        <div
+          key={item._id}
+          style={{
+            border: '1px solid #ddd',
+            margin: 8,
+            padding: 12,
+            borderRadius: 6,
+          }}
+        >
+          <p>
+            <strong>{t('lostItem')}:</strong> {item.description}
+          </p>
+
+          <p>
+            <strong>{t('pickup')}:</strong> {item.ride?.pickup}
+          </p>
+
+          <p>
+            <strong>{t('dropoff')}:</strong> {item.ride?.dropoff}
+          </p>
+
+          <p>
+            <strong>{t('rider')}:</strong>{' '}
+            {item.rider?.name || (t('unknown'))}
+          </p>
+
+          <p>
+            <strong>{t('status')}:</strong>{' '}
+            {translateStatus(item.status)}
+          </p>
+
+          {item.driverReply ? (
+            <p>
+              <strong>{t('yourReply')}:</strong> {item.driverReply}
+            </p>
           ) : (
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={handleAccept}
+            <>
+              <textarea
+                placeholder={t('writeReply')}
+                value={replies[item._id] || ''}
+                onChange={(e) =>
+                  setReplies((prev) => ({
+                    ...prev,
+                    [item._id]: e.target.value,
+                  }))
+                }
                 style={{
-                  flex: 1,
-                  background: '#28a745',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  fontSize: '16px',
-                  cursor: 'pointer'
+                  width: '100%',
+                  minHeight: 80,
+                  marginBottom: 8,
                 }}
+              />
+
+              <select
+                value={statuses[item._id] || 'not_found'}
+                onChange={(e) =>
+                  setStatuses((prev) => ({
+                    ...prev,
+                    [item._id]: e.target.value,
+                  }))
+                }
+                style={{ marginRight: 8 }}
               >
-                قبول الطلب
+                <option value="found">{t('found')}</option>
+                <option value="not_found">{t('notFound')}</option>
+              </select>
+
+              <button onClick={() => handleReply(item._id)}>
+                {t('sendReply')}
               </button>
-              <button
-                onClick={handleReject}
-                style={{
-                  flex: 1,
-                  background: '#dc3545',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  fontSize: '16px',
-                  cursor: 'pointer'
-                }}
-              >
-                رفض
-              </button>
-            </div>
+            </>
           )}
         </div>
-      )}
+      ))}
     </div>
   );
 }

@@ -1,78 +1,47 @@
-import React from 'react';
-import Link from 'next/link';
+// frontend/pages/dashboard.jsx
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DriverDashboard from '../components/DriverDashboard';
+import RideHistory from '../components/RideHistory';
+import UserProfile from '../components/UserProfile';
+import DashboardLayout from '../components/DashboardLayout';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, token, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState('rides'); // for rider tabs
+
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <div>Please log in to view your dashboard.</div>;
+
+  let rightPane;
+
+  // If user is a driver → always show driver dashboard on the right
+  if (user.role === 'driver') {
+    rightPane = <DriverDashboard token={token} />;
+  } else {
+    // Rider view → switch by active tab
+    if (activeTab === 'rides') {
+      rightPane = <RideHistory token={token} />;
+    } else if (activeTab === 'payments') {
+      rightPane = <div>Payments section (to be implemented)</div>;
+    } else if (activeTab === 'profile') {
+      rightPane = <UserProfile user={user} />;
+    } else if (activeTab === 'settings') {
+      rightPane = <div>Settings section (to be implemented)</div>;
+    }
+  }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#f4f7f6',
-      padding: '30px',
-      fontFamily: 'sans-serif',
-      direction: 'rtl'
-    }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        
-        {/* الشريط العلوي */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: '#092032',
-          color: '#fff',
-          padding: '15px 25px',
-          borderRadius: '12px',
-          marginBottom: '25px'
-        }}>
-          <h1 style={{ margin: 0, fontSize: '22px' }}>لوحة تحكم السائق</h1>
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-            <Link href="/" style={{ color: '#fff', textDecoration: 'none', fontWeight: 'bold' }}>
-              الرئيسية
-            </Link>
-            {user && (
-              <button
-                onClick={logout}
-                style={{
-                  background: '#dc3545',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '8px 14px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
-              >
-                تسجيل الخروج
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* معلومات الحساب */}
-        <div style={{
-          background: '#fff',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-          marginBottom: '20px'
-        }}>
-          <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>بيانات السائق</h3>
-          {user ? (
-            <p style={{ margin: 0, color: '#555' }}>
-              <strong>الاسم:</strong> {user.name || user.email} | <strong>الصفة:</strong> سائق
-            </p>
-          ) : (
-            <p style={{ margin: 0, color: '#888' }}>يرجى تسجيل الدخول لعرض بياناتك.</p>
-          )}
-        </div>
-
-        {/* عرض طلبات الركاب الواردة */}
-        <DriverDashboard />
-
-      </div>
-    </div>
+    <DashboardLayout
+      user={user}
+      left={
+        <UserProfile
+          user={user}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      }
+      right={rightPane}
+    />
   );
 }
