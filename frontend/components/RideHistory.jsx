@@ -167,6 +167,10 @@ export default function RideHistory({ token }) {
               <b>{t('dropoff')}:</b> {ride.dropoff}
             </p>
 
+            <p className="text-sm text-gray-500">
+            وقت الحجز: {new Date(ride.createdAt).toLocaleString('ar-LY')}
+            </p>
+            
             <p>
               <b>{t('status')}:</b>{' '}
               {ride.status === 'completed'

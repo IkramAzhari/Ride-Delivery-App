@@ -204,8 +204,10 @@ export default function DriverDashboard({ token }) {
 
             <strong>{t('status')}:</strong> {translateStatus(ride.status)}
             <br />
-            <strong>{t('bookingTime') || 'Booking Time'}:</strong> {new Date(ride.createdAt).toLocaleString()}
+
+            <strong>{t('bookingTime') || 'وقت الحجز'}:</strong> {new Date(ride.createdAt).toLocaleString()}
             <br />
+            
             {ride.status === 'requested' && (
               <button onClick={() => handleAccept(ride._id)}>
                 {t('acceptRide')}
