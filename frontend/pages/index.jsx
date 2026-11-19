@@ -20,9 +20,6 @@ export default function Home() {
   const [dropoff, setDropoff] = useState(null);
 
   const handleRequestRide = async ({ pickup, dropoff }) => {
-    setPickup([17.385, 78.4867]);
-    setDropoff([17.435, 78.4444]);
-
     if (!token) {
       alert(t('riderLoginMessage'));
       return;
@@ -41,11 +38,20 @@ export default function Home() {
       const data = await res.json();
 
       if (res.ok) {
-        alert(language === 'ar' ? 'تم طلب الرحلة بنجاح!' : 'Ride requested successfully!');
+        alert(
+          language === 'ar'
+            ? 'تم طلب الرحلة بنجاح!'
+            : 'Ride requested successfully!'
+        );
         console.log('Ride created:', data);
       } else {
         console.error('Ride error:', data);
-        alert(data.error || (language === 'ar' ? 'فشل طلب الرحلة' : 'Ride request failed'));
+        alert(
+          data.error ||
+            (language === 'ar'
+              ? 'فشل طلب الرحلة'
+              : 'Ride request failed')
+        );
       }
     } catch (err) {
       console.error('Ride request error:', err);
@@ -64,10 +70,10 @@ export default function Home() {
 
             <nav className={styles.navLinks}>
               <button
-  type="button"
-  onClick={toggleLanguage}
-  className={`${styles.navLink} ${styles.languageButton}`}
->
+                type="button"
+                onClick={toggleLanguage}
+                className={`${styles.navLink} ${styles.languageButton}`}
+              >
                 {language === 'en' ? 'العربية' : 'English'}
               </button>
 
@@ -136,7 +142,10 @@ export default function Home() {
                     {t('driverHomeMessage')}
                   </p>
                 ) : user ? (
-                  <RideForm onRequestRide={handleRequestRide} />
+                  <RideForm
+                    onRequestRide={handleRequestRide}
+                    onPickupLocationSelected={setPickup}
+                  />
                 ) : (
                   <p className={styles.helperText}>
                     {t('riderLoginMessage')}
@@ -157,7 +166,10 @@ export default function Home() {
               </div>
 
               <div className={styles.mapBody}>
-                <MapComponent pickup={pickup} dropoff={dropoff} />
+                <MapComponent
+                  pickup={pickup}
+                  dropoff={dropoff}
+                />
               </div>
             </section>
           </div>

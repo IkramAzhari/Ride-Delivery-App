@@ -1,9 +1,16 @@
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+
+import { useEffect } from 'react';
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMap,
+} from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// icon override (keep this)
 delete L.Icon.Default.prototype._getIconUrl;
+
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -13,16 +20,38 @@ L.Icon.Default.mergeOptions({
     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
+function MapUpdater({ pickup }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (pickup && Array.isArray(pickup) && pickup.length === 2) {
+      map.setView(pickup, 15);
+    }
+  }, [pickup, map]);
+
+  return null;
+}
+
 export default function MapComponent({ pickup, dropoff }) {
+  const defaultPosition = [17.385, 78.4867];
+
   return (
     <MapContainer
-      center={[17.385, 78.4867]}
+      center={defaultPosition}
       zoom={13}
-      style={{ height: '100%', width: '100%' }}  // key: fill container
+      style={{ height: '100%', width: '100%' }}
       scrollWheelZoom={true}
     >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <TileLayer
+        attribution='&copy; OpenStreetMap contributors'
+        url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
+        subdomains={['a', 'b', 'c']}
+      />
+
+      <MapUpdater pickup={pickup} />
+
       {pickup && <Marker position={pickup} />}
+
       {dropoff && <Marker position={dropoff} />}
     </MapContainer>
   );
