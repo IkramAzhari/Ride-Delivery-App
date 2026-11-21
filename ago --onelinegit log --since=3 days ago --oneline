@@ -1,0 +1,17 @@
+[33md379df1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m تحديث لوحة السائق وإشعارات القبول والرفض
+[33m6c1ae5a[m Update rideRoutes.js
+[33m4a92d1a[m Update rideController.js
+[33m61c4768[m Update rideController.js
+[33m32998b4[m Update [id].jsx
+[33m94a7c3f[m Update rideController.js
+[33m0436882[m Update mapService.js
+[33m3ea1eaf[m Update rideController.js
+[33mb794fb9[m Update Ride.js
+[33mca61b70[m Update mapService.js
+[33m456e40f[m Update rideSocket.js
+[33m9b9cbb6[m Add Arabic and English language support
+[33m5f4c163[m Add driver lost item replies
+[33mc144c21[m Fix driver ride completion status
+[33mfd258d9[m Add lost item reporting feature
+[33m3927f3c[m Initial commit
+[33m4e2858e[m Initial commit: Uber clone backend + frontend
