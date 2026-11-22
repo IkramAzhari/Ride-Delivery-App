@@ -18,7 +18,7 @@ export default function Dashboard() {
     return (
       <DashboardLayout
         user={user}
-        left={<UserProfile user={user} />}
+        left={<div><h2>{user.name || user.email}</h2><p>مدير النظام</p></div>}
         right={<FareSettingsPanel token={token} />}
       />
     );
