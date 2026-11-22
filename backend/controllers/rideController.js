@@ -56,7 +56,9 @@ async function acceptRide(req, res) {
     if (req.user.role !== 'driver') return res.status(403).json({ error: 'Only drivers can accept rides' });
     const ride = await Ride.findOne({ _id: req.params.id, status: 'requested', offers: { $size: 0 } });
     if (!ride) return res.status(400).json({ error: 'Ride unavailable or has active negotiation' });
-    ride.status = 'accepted'; ride.driver = req.user.userId; ride.agreedFare = ride.estimatedFare;
+    ride.status = 'accepted';
+    ride.driver = req.user.userId;
+    ride.agreedFare = ride.estimatedFare;
     await ride.save();
     return res.json(ride);
   } catch (err) {
@@ -74,6 +76,7 @@ async function createRiderOffer(req, res) {
     if (ride.status !== 'requested') return res.status(400).json({ error: 'Negotiation is closed' });
     const latest = ride.offers[ride.offers.length - 1];
     if (latest && latest.byRole !== 'driver') return res.status(400).json({ error: 'Wait for the driver to respond first' });
+
     const amount = Number(req.body.amount);
     if (!Number.isFinite(amount) || amount < ride.minimumFare || amount > ride.estimatedFare) {
       return res.status(400).json({ error: 'Offer must be between minimum and estimated fare', minimumFare: ride.minimumFare, estimatedFare: ride.estimatedFare });
@@ -96,6 +99,7 @@ async function createDriverCounterOffer(req, res) {
     const latest = ride.offers[ride.offers.length - 1];
     if (!latest || latest.byRole !== 'rider') return res.status(400).json({ error: 'A rider offer is required first' });
     if (ride.driver && String(ride.driver) !== req.user.userId) return res.status(409).json({ error: 'Another driver is negotiating this ride' });
+
     const amount = Number(req.body.amount);
     const maximumFare = Math.round(ride.estimatedFare * 1.5 * 100) / 100;
     if (!Number.isFinite(amount) || amount < ride.minimumFare || amount > maximumFare) {
@@ -117,15 +121,28 @@ async function acceptLatestOffer(req, res) {
     const ride = await Ride.findById(req.params.id);
     if (!ride) return res.status(404).json({ error: 'Ride not found' });
     if (ride.status !== 'requested') return res.status(400).json({ error: 'Negotiation is closed' });
+
     const latest = ride.offers[ride.offers.length - 1];
-    if (!latest || latest.byRole === req.user.role) return res.status(400).json({ error: 'No offer from the other party to accept' });
+    if (!latest || latest.byRole === req.user.role) {
+      return res.status(400).json({ error: 'No offer from the other party to accept' });
+    }
 
     if (req.user.role === 'rider') {
       if (String(ride.rider) !== req.user.userId) return res.status(403).json({ error: 'This is not your ride' });
-      ride.driver = latest.user;
+      if (latest.byRole !== 'driver' || !ride.driver || String(latest.user) !== String(ride.driver)) {
+        return res.status(403).json({ error: 'Only the assigned negotiating driver offer can be accepted' });
+      }
     } else {
-      if (String(latest.user) !== req.user.userId || String(ride.driver) !== req.user.userId) return res.status(403).json({ error: 'Only the negotiating driver can accept' });
+      if (latest.byRole !== 'rider' || String(latest.user) !== String(ride.rider)) {
+        return res.status(400).json({ error: 'The latest offer is not from this ride’s rider' });
+      }
+      if (ride.driver && String(ride.driver) !== req.user.userId) {
+        return res.status(409).json({ error: 'Another driver is negotiating this ride' });
+      }
+      // The driver accepting the rider's offer becomes the assigned driver.
+      ride.driver = req.user.userId;
     }
+
     ride.agreedFare = latest.amount;
     ride.status = 'accepted';
     await ride.save();
@@ -143,7 +160,8 @@ async function completeRide(req, res) {
     if (!ride) return res.status(404).json({ error: 'Ride not found' });
     if (String(ride.driver) !== req.user.userId) return res.status(403).json({ error: 'This ride is not assigned to you' });
     if (ride.status !== 'accepted') return res.status(400).json({ error: 'Ride is not in accepted state' });
-    ride.status = 'completed'; await ride.save();
+    ride.status = 'completed';
+    await ride.save();
     return res.json(ride);
   } catch (err) {
     console.error('Complete ride error:', err);
@@ -157,7 +175,8 @@ async function cancelRide(req, res) {
     if (!ride) return res.status(404).json({ error: 'Ride not found' });
     if (String(ride.rider) !== req.user.userId) return res.status(403).json({ error: 'Not your ride' });
     if (ride.status !== 'requested') return res.status(400).json({ error: 'Only requested rides can be cancelled' });
-    ride.status = 'cancelled'; await ride.save();
+    ride.status = 'cancelled';
+    await ride.save();
     return res.json(ride);
   } catch (err) {
     console.error('Cancel ride error:', err);
@@ -165,4 +184,8 @@ async function cancelRide(req, res) {
   }
 }
 
-module.exports = { createRide, listRides, listPendingRides, listDriverRides, acceptRide, createRiderOffer, createDriverCounterOffer, acceptLatestOffer, completeRide, cancelRide };
+module.exports = {
+  createRide, listRides, listPendingRides, listDriverRides,
+  acceptRide, createRiderOffer, createDriverCounterOffer,
+  acceptLatestOffer, completeRide, cancelRide,
+};
