@@ -19,7 +19,7 @@ export default function Home() {
   const [pickup, setPickup] = useState(null);
   const [dropoff, setDropoff] = useState(null);
 
-  const handleRequestRide = async ({ pickup, dropoff }) => {
+  const handleRequestRide = async ({ pickup, dropoff, pickupCoordinates, dropoffCoordinates }) => {
     if (!token) {
       alert(t('riderLoginMessage'));
       return;
@@ -32,7 +32,7 @@ export default function Home() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ pickup, dropoff }),
+        body: JSON.stringify({ pickup, dropoff, pickupCoordinates, dropoffCoordinates }),
       });
 
       const data = await res.json();
@@ -40,7 +40,7 @@ export default function Home() {
       if (res.ok) {
         alert(
           language === 'ar'
-            ? 'تم طلب الرحلة بنجاح!'
+            ? `تم طلب الرحلة! السعر المقترح: ${data.estimatedFare} د.ل، والحد الأدنى: ${data.minimumFare} د.ل`
             : 'Ride requested successfully!'
         );
         console.log('Ride created:', data);
