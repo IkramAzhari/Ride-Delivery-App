@@ -1,6 +1,4 @@
-const BASE_FARE = Number(process.env.BASE_FARE_LYD || 5);
-const PRICE_PER_KM = Number(process.env.PRICE_PER_KM_LYD || 2);
-const MIN_FARE_PERCENT = Number(process.env.MIN_FARE_PERCENT || 85);
+const FareSettings = require('../models/FareSettings');
 
 function validCoordinates(value) {
   return Array.isArray(value) && value.length === 2 &&
@@ -10,10 +8,27 @@ function validCoordinates(value) {
 }
 const money = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
+async function getFareSettings() {
+  const saved = await FareSettings.findOne({ key: 'default' }).lean();
+  return saved || {
+    baseFare: Number(process.env.BASE_FARE_LYD || 5),
+    pricePerKm: Number(process.env.PRICE_PER_KM_LYD || 2),
+    minimumFarePercent: Number(process.env.MIN_FARE_PERCENT || 85),
+  };
+}
+
 async function calculateTripFare(pickupCoordinates, dropoffCoordinates) {
   if (!validCoordinates(pickupCoordinates) || !validCoordinates(dropoffCoordinates)) {
     throw new Error('Valid pickup and dropoff coordinates are required');
   }
+
+  const settings = await getFareSettings();
+  if (![settings.baseFare, settings.pricePerKm, settings.minimumFarePercent].every(Number.isFinite) ||
+      settings.baseFare < 0 || settings.pricePerKm < 0 ||
+      settings.minimumFarePercent < 0 || settings.minimumFarePercent > 100) {
+    throw new Error('Fare settings are invalid; ask an administrator to review them');
+  }
+
   const [lat1, lon1] = pickupCoordinates.map(Number);
   const [lat2, lon2] = dropoffCoordinates.map(Number);
   const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`;
@@ -24,9 +39,11 @@ async function calculateTripFare(pickupCoordinates, dropoffCoordinates) {
   if (data.code !== 'Ok' || !route || !Number.isFinite(route.distance)) {
     throw new Error('Could not calculate a driving route');
   }
+
   const distanceKm = money(route.distance / 1000);
-  const estimatedFare = money(BASE_FARE + distanceKm * PRICE_PER_KM);
-  const minimumFare = money(Math.max(BASE_FARE, estimatedFare * MIN_FARE_PERCENT / 100));
+  const estimatedFare = money(settings.baseFare + distanceKm * settings.pricePerKm);
+  const minimumFare = money(Math.max(settings.baseFare, estimatedFare * settings.minimumFarePercent / 100));
   return { distanceKm, estimatedFare, minimumFare, currency: 'LYD' };
 }
-module.exports = { calculateTripFare, validCoordinates };
+
+module.exports = { calculateTripFare, validCoordinates, getFareSettings };
