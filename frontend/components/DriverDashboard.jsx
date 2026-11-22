@@ -78,6 +78,35 @@ export default function DriverDashboard({ token }) {
     }
   };
 
+
+  const submitCounterOffer = async (rideId) => {
+    const value = window.prompt('أدخل السعر المقترح بالدينار الليبي:');
+    if (value === null) return;
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return alert('يرجى إدخال مبلغ صحيح');
+    try {
+      const res = await fetch(`http://localhost:5000/api/rides/${rideId}/counter-offer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ amount }),
+      });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error || 'تعذر إرسال العرض');
+      fetchPendingRides();
+    } catch (error) { alert(t('serverError')); }
+  };
+
+  const acceptLatestOffer = async (rideId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/rides/${rideId}/offers/accept`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error || 'تعذر قبول العرض');
+      fetchPendingRides();
+    } catch (error) { alert(t('serverError')); }
+  };
+
   const handleAccept = async (rideId) => {
     try {
       const res = await fetch(
@@ -204,13 +233,31 @@ export default function DriverDashboard({ token }) {
 
             <strong>{t('status')}:</strong> {translateStatus(ride.status)}
             <br />
+            {ride.estimatedFare != null && (
+              <>
+                <strong>المسافة:</strong> {ride.distanceKm} كم<br />
+                <strong>السعر المقترح:</strong> {ride.estimatedFare} د.ل<br />
+                <strong>أقل سعر مسموح:</strong> {ride.minimumFare} د.ل<br />
+              </>
+            )}
+            {ride.offers?.map((offer) => (
+              <p key={offer._id}>{offer.byRole === 'rider' ? 'عرض الراكب' : 'عرض السائق'}: {offer.amount} د.ل</p>
+            ))}
 
            <strong>وقت الحجز:</strong> {new Date(ride.createdAt).toLocaleString('ar-LY')}
             
             {ride.status === 'requested' && (
-              <button onClick={() => handleAccept(ride._id)}>
-                {t('acceptRide')}
-              </button>
+              <>
+                {(!ride.offers || ride.offers.length === 0) && (
+                  <button onClick={() => handleAccept(ride._id)}>{t('acceptRide')} ({ride.estimatedFare} د.ل)</button>
+                )}
+                {ride.offers?.length > 0 && ride.offers[ride.offers.length - 1].byRole === 'rider' && (
+                  <>
+                    <button onClick={() => acceptLatestOffer(ride._id)}>قبول عرض الراكب</button>
+                    <button onClick={() => submitCounterOffer(ride._id)}>تقديم سعر مضاد</button>
+                  </>
+                )}
+              </>
             )}
 
             {ride.status === 'accepted' && (

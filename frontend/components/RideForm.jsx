@@ -8,6 +8,7 @@ export default function RideForm({
 }) {
   const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
+  const [pickupCoordinates, setPickupCoordinates] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [locationError, setLocationError] = useState('');
 
@@ -58,6 +59,7 @@ export default function RideForm({
           }
 
           setPickup(address);
+          setPickupCoordinates([latitude, longitude]);
           onPickupLocationSelected?.([latitude, longitude]);
         } catch (error) {
           setLocationError(
@@ -92,46 +94,37 @@ export default function RideForm({
     );
   }
 
+  async function geocodeAddress(address) {
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    url.search = new URLSearchParams({
+      format: 'jsonv2', q: address, limit: '1',
+      'accept-language': language,
+    }).toString();
+    const response = await fetch(url.toString());
+    if (!response.ok) throw new Error('Location lookup failed');
+    const results = await response.json();
+    if (!results.length) throw new Error('Address not found');
+    return [Number(results[0].lat), Number(results[0].lon)];
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-
     if (!pickup.trim() || !dropoff.trim()) return;
-
-    // If the user entered the pickup location manually,
-    // try to find its coordinates for the map.
     try {
-      const url = new URL(
-        'https://nominatim.openstreetmap.org/search'
-      );
-
-      url.search = new URLSearchParams({
-        format: 'jsonv2',
-        q: pickup.trim(),
-        limit: '1',
-        'accept-language': language,
-      }).toString();
-
-      const response = await fetch(url.toString());
-
-      if (response.ok) {
-        const results = await response.json();
-
-        if (results.length > 0) {
-          onPickupLocationSelected?.([
-            Number(results[0].lat),
-            Number(results[0].lon),
-          ]);
-        }
-      }
+      const resolvedPickup = pickupCoordinates || await geocodeAddress(pickup.trim());
+      const dropoffCoordinates = await geocodeAddress(dropoff.trim());
+      onPickupLocationSelected?.(resolvedPickup);
+      onRequestRide({
+        pickup: pickup.trim(),
+        dropoff: dropoff.trim(),
+        pickupCoordinates: resolvedPickup,
+        dropoffCoordinates,
+      });
     } catch (error) {
-      console.error('Manual location lookup failed:', error);
+      setLocationError(isArabic
+        ? 'تعذر تحديد إحداثيات الانطلاق أو الوجهة. تأكد من العناوين وحاول مرة أخرى.'
+        : 'Could not locate the pickup or destination. Check the addresses and try again.');
     }
-
-    // Only the address text is sent with the ride request.
-    onRequestRide({
-      pickup: pickup.trim(),
-      dropoff: dropoff.trim(),
-    });
   }
 
   return (
@@ -153,6 +146,7 @@ export default function RideForm({
           onChange={(e) => {
             setPickup(e.target.value);
             setLocationError('');
+            setPickupCoordinates(null);
             onPickupLocationSelected?.(null);
           }}
           required

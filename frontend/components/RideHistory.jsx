@@ -38,6 +38,35 @@ export default function RideHistory({ token }) {
     }
   };
 
+
+  const submitOffer = async (rideId) => {
+    const value = window.prompt('أدخلي عرضك بالدينار الليبي:');
+    if (value === null) return;
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return alert('يرجى إدخال مبلغ صحيح');
+    try {
+      const res = await fetch(`http://localhost:5000/api/rides/${rideId}/offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ amount }),
+      });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error || 'تعذر إرسال العرض');
+      setRides((items) => items.map((ride) => ride._id === rideId ? data : ride));
+    } catch (error) { alert(t('serverError')); }
+  };
+
+  const acceptOffer = async (rideId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/rides/${rideId}/offers/accept`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error || 'تعذر قبول العرض');
+      setRides((items) => items.map((ride) => ride._id === rideId ? data : ride));
+    } catch (error) { alert(t('serverError')); }
+  };
+
   const fetchLostItems = async () => {
     try {
       const res = await fetch(
@@ -229,10 +258,29 @@ export default function RideHistory({ token }) {
               </div>
             )}
 
+            {ride.estimatedFare != null && (
+              <div>
+                <p><b>المسافة:</b> {ride.distanceKm} كم</p>
+                <p><b>السعر المقترح:</b> {ride.estimatedFare} د.ل</p>
+                <p><b>أقل سعر:</b> {ride.minimumFare} د.ل</p>
+                {ride.agreedFare != null && <p><b>السعر المتفق عليه:</b> {ride.agreedFare} د.ل</p>}
+              </div>
+            )}
+            {ride.offers?.map((offer) => (
+              <p key={offer._id}>
+                {offer.byRole === 'rider' ? 'عرضك' : 'عرض السائق'}: {offer.amount} د.ل
+              </p>
+            ))}
             {ride.status === 'requested' && (
-              <button onClick={() => cancelRide(ride._id)}>
-                {t('cancelRide')}
-              </button>
+              <>
+                {ride.offers?.length > 0 && ride.offers[ride.offers.length - 1].byRole === 'driver' && (
+                  <button onClick={() => acceptOffer(ride._id)}>قبول عرض السائق</button>
+                )}
+                {(!ride.offers?.length || ride.offers[ride.offers.length - 1].byRole === 'driver') && (
+                  <button onClick={() => submitOffer(ride._id)}>تقديم / تعديل عرض السعر</button>
+                )}
+                <button onClick={() => cancelRide(ride._id)}>{t('cancelRide')}</button>
+              </>
             )}
           </div>
         );

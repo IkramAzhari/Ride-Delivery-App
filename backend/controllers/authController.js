@@ -3,22 +3,27 @@ const { hashPassword, comparePassword } = require('../utils/hashPassword');
 const { generateToken } = require('../utils/jwtUtils');
 
 exports.register = async (req, res) => {
-   console.log('Register endpoint triggered');
   try {
     const { name, email, password, role } = req.body;
+    // Never allow public registration to create an administrator account.
+    if (!['rider', 'driver'].includes(role)) {
+      return res.status(400).json({ error: 'Role must be rider or driver' });
+    }
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email and password are required' });
+    }
 
     const hashed = await hashPassword(password);
     const user = new User({ name, email, password: hashed, role });
     await user.save();
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
-     console.error('Registration error:', err);
-    res.status(400).json({ error: 'Registration failed' });
+    console.error('Registration error:', err);
+    return res.status(400).json({ error: 'Registration failed' });
   }
 };
 
 exports.login = async (req, res) => {
-  console.log('Login endpoint triggered');
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -28,8 +33,7 @@ exports.login = async (req, res) => {
     if (!valid) return res.status(400).json({ error: 'Invalid password' });
 
     const token = generateToken({ userId: user._id, role: user.role });
-
-    res.json({
+    return res.json({
       token,
       user: {
         id: user._id,
@@ -39,7 +43,6 @@ exports.login = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(400).json({ error: 'Login failed' });
+    return res.status(400).json({ error: 'Login failed' });
   }
 };
-
