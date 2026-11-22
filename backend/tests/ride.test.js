@@ -1,5 +1,6 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
+process.env.MONGO_URI = 'mongodb://127.0.0.1:27017/uberclone_test';
 
 jest.mock('../services/fareService', () => ({
   calculateTripFare: jest.fn().mockResolvedValue({
@@ -47,7 +48,7 @@ async function createRide() {
 }
 
 beforeAll(async () => {
-  await mongoose.connect('mongodb://localhost:27017/uberclone_test');
+  if (mongoose.connection.readyState !== 1) await mongoose.connection.asPromise();
   await User.deleteMany({ email: { $in: ['rider@example.com', 'driver@example.com'] } });
   const rider = await registerAndLogin('Test Rider', 'rider@example.com', 'rider');
   const driver = await registerAndLogin('Test Driver', 'driver@example.com', 'driver');
