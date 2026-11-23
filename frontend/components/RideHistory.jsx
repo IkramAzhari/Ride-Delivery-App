@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function RideHistory({ token }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [rides, setRides] = useState([]);
   const [lostItems, setLostItems] = useState([]);
@@ -65,6 +65,11 @@ export default function RideHistory({ token }) {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.code === 'OFFER_BELOW_MINIMUM') {
+          return alert(language === 'ar'
+            ? 'تم رفض عرضك لأنه أقل من الحد الأدنى المسموح. زيدي قيمة العرض وحاولي مرة ثانية.'
+            : 'Your offer was rejected because it is below the minimum allowed fare. Please increase it and try again.');
+        }
         return alert(data.error || 'تعذر إرسال العرض');
       }
 
