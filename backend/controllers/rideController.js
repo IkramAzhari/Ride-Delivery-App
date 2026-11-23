@@ -65,7 +65,10 @@ async function listPendingRides(req, res) {
       });
     }
 
-    const rides = await Ride.find({ status: 'requested' })
+    const rides = await Ride.find({
+      status: 'requested',
+      $or: [{ driver: null }, { driver: req.user.userId }],
+    })
       .populate('rider', 'name email')
       .populate('offers.user', 'name role')
       .sort({ createdAt: -1 });
@@ -171,7 +174,10 @@ async function createRiderOffer(req, res) {
       amount > ride.estimatedFare
     ) {
       return res.status(400).json({
-        error: 'Offer is outside the allowed range. Please adjust your amount.',
+        code: amount < ride.minimumFare ? 'OFFER_BELOW_MINIMUM' : 'OFFER_ABOVE_MAXIMUM',
+        error: amount < ride.minimumFare
+          ? 'Your offer was rejected because it is below the minimum allowed fare.'
+          : 'Your offer is above the proposed fare. Please lower your amount.',
       });
     }
 
