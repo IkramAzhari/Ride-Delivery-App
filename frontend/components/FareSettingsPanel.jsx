@@ -5,7 +5,7 @@ const API = 'http://localhost:5000/api/admin/fare-settings';
 export default function FareSettingsPanel({ token }) {
   const [settings, setSettings] = useState({
     baseFare: '5',
-    pricePerKm: '2',
+    pricePerKm: '1',
     minimumFarePercent: '85',
   });
   const [loading, setLoading] = useState(true);
