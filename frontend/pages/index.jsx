@@ -40,7 +40,7 @@ export default function Home() {
       if (res.ok) {
         alert(
           language === 'ar'
-            ? `تم طلب الرحلة! السعر المقترح: ${data.estimatedFare} د.ل، والحد الأدنى: ${data.minimumFare} د.ل`
+            ? `تم طلب الرحلة! السعر المقترح: ${data.estimatedFare} د.ل`
             : 'Ride requested successfully!'
         );
         console.log('Ride created:', data);
