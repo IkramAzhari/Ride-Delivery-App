@@ -74,7 +74,7 @@ describe('Ride API and fare negotiation', () => {
     expect(ride.dropoff).toBe('Destination');
     expect(ride.rider).toBe(String(riderId));
     expect(ride.estimatedFare).toBe(20);
-    expect(ride.minimumFare).toBe(17);
+    expect(ride).not.toHaveProperty('minimumFare');
     expect(ride.distanceKm).toBe(10);
   });
 
@@ -94,7 +94,25 @@ describe('Ride API and fare negotiation', () => {
       .set('Authorization', `Bearer ${riderToken}`)
       .send({ amount: 16.99 });
     expect(response.statusCode).toBe(400);
-    expect(response.body.minimumFare).toBe(17);
+    expect(response.body.code).toBe('OFFER_BELOW_MINIMUM');
+    expect(response.body).not.toHaveProperty('minimumFare');
+  });
+
+  it('shows a rider offer to drivers in the pending rides list', async () => {
+    const ride = await createRide();
+    await request(app)
+      .post(`/api/rides/${ride._id}/offers`)
+      .set('Authorization', `Bearer ${riderToken}`)
+      .send({ amount: 18 });
+
+    const response = await request(app)
+      .get('/api/rides/pending')
+      .set('Authorization', `Bearer ${driverToken}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].offers).toHaveLength(1);
+    expect(response.body[0].offers[0].amount).toBe(18);
   });
 
   it('allows the driver to accept the rider offer and assigns that driver', async () => {
@@ -156,5 +174,6 @@ describe('Ride API and fare negotiation', () => {
     expect(response.statusCode).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
     expect(response.body[0].pickup).toBe('Pickup point');
+    expect(response.body[0]).not.toHaveProperty('minimumFare');
   });
 });
