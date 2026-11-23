@@ -230,6 +230,9 @@ export default function DriverDashboard({ token }) {
 
             <strong>{t('dropoff')}:</strong> {ride.dropoff}
             <br />
+            {ride.status === 'requested' && ride.rider?.name && (
+              <><strong>الراكب:</strong> {ride.rider.name}<br /></>
+            )}
 
             <strong>{t('status')}:</strong> {translateStatus(ride.status)}
             <br />
@@ -241,8 +244,13 @@ export default function DriverDashboard({ token }) {
               </>
             )}
             {ride.offers?.map((offer) => (
-              <p key={offer._id}>{offer.byRole === 'rider' ? 'عرض الراكب' : 'عرض السائق'}: {offer.amount} د.ل</p>
+              <p key={offer._id}>
+                {offer.byRole === 'rider' ? 'عرض الراكب' : 'عرضك كسائق'}: {offer.amount} د.ل
+              </p>
             ))}
+            {ride.status === 'requested' && ride.offers?.length > 0 && (
+              <p role="status">يوجد تفاوض على سعر هذه الرحلة</p>
+            )}
 
            <strong>وقت الحجز:</strong> {new Date(ride.createdAt).toLocaleString('ar-LY')}
             
