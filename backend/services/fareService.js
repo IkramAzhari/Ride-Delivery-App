@@ -12,7 +12,7 @@ async function getFareSettings() {
   const saved = await FareSettings.findOne({ key: 'default' }).lean();
   return saved || {
     baseFare: Number(process.env.BASE_FARE_LYD || 5),
-    pricePerKm: Number(process.env.PRICE_PER_KM_LYD || 2),
+    pricePerKm: Number(process.env.PRICE_PER_KM_LYD || 1),
     minimumFarePercent: Number(process.env.MIN_FARE_PERCENT || 85),
   };
 }
