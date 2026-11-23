@@ -1,11 +1,16 @@
+
 const request = require('supertest');
 const mongoose = require('mongoose');
+
+process.env.MONGO_URI = 'mongodb://127.0.0.1:27017/uberclone_test';
+
 const app = require('../app');
 const User = require('../models/User');
 
 beforeAll(async () => {
-  // Connect to a test database
-  await mongoose.connect('mongodb://localhost:27017/uberclone_test');
+  if (mongoose.connection.readyState !== 1) {
+    await mongoose.connection.asPromise();
+  }
 });
 
 afterAll(async () => {

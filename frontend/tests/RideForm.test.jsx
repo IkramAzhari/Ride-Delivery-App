@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react';
 import RideForm from '../components/RideForm';
+import { LanguageProvider } from '../context/LanguageContext';
 
 describe('RideForm', () => {
   beforeEach(() => {
@@ -16,16 +18,27 @@ describe('RideForm', () => {
 
   it('geocodes both locations and submits their coordinates', async () => {
     const mockRequestRide = jest.fn();
+
     const { getByPlaceholderText, getByRole } = render(
-      <RideForm onRequestRide={mockRequestRide} />
+      <LanguageProvider>
+        <RideForm onRequestRide={mockRequestRide} />
+      </LanguageProvider>
     );
 
-    fireEvent.change(getByPlaceholderText(/Pickup location/i), {
-      target: { value: 'Hitech City' },
-    });
-    fireEvent.change(getByPlaceholderText(/Drop-off location/i), {
-      target: { value: 'Miyapur' },
-    });
+    fireEvent.change(
+      getByPlaceholderText(/Enter pickup location or use GPS/i),
+      {
+        target: { value: 'Hitech City' },
+      }
+    );
+
+    fireEvent.change(
+      getByPlaceholderText(/Where do you want to go/i),
+      {
+        target: { value: 'Miyapur' },
+      }
+    );
+
     fireEvent.click(getByRole('button', { name: 'Request Ride' }));
 
     await waitFor(() => {
@@ -36,6 +49,7 @@ describe('RideForm', () => {
         dropoffCoordinates: [32.8872, 13.1913],
       });
     });
+
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 });
